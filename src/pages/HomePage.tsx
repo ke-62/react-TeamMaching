@@ -39,7 +39,7 @@ const HomePage: React.FC = () => {
       <section className="features-section">
         <h2 className="section-title">주요 기능</h2>
         <div className="features-grid">
-          <div className="feature-card">
+          <Link to="/recruits" className="feature-card" style={{ textDecoration: 'none', color: 'inherit' }}>
             <div className="feature-icon">🎯</div>
             <h3>AI 기반 팀원 추천</h3>
             <p>
@@ -47,9 +47,9 @@ const HomePage: React.FC = () => {
               <br />
               최적의 팀원을 추천합니다
             </p>
-          </div>
+          </Link>
 
-          <div className="feature-card">
+          <Link to="/profile" className="feature-card" style={{ textDecoration: 'none', color: 'inherit' }}>
             <div className="feature-icon">📊</div>
             <h3>동료 평가 이력 관리</h3>
             <p>
@@ -57,9 +57,9 @@ const HomePage: React.FC = () => {
               <br />
               다음 팀 모집에 활용합니다
             </p>
-          </div>
+          </Link>
 
-          <div className="feature-card">
+          <Link to="/profile" className="feature-card" style={{ textDecoration: 'none', color: 'inherit' }}>
             <div className="feature-icon">💻</div>
             <h3>GitHub 연동</h3>
             <p>
@@ -67,9 +67,9 @@ const HomePage: React.FC = () => {
               <br />
               신뢰도 높은 프로필을 구성합니다
             </p>
-          </div>
+          </Link>
 
-          <div className="feature-card">
+          <Link to="/alarm" className="feature-card" style={{ textDecoration: 'none', color: 'inherit' }}>
             <div className="feature-icon">📅</div>
             <h3>일정 알림</h3>
             <p>
@@ -77,7 +77,7 @@ const HomePage: React.FC = () => {
               <br />
               주요 공모 일정을 한눈에 확인하세요
             </p>
-          </div>
+          </Link>
         </div>
       </section>
 
@@ -108,6 +108,56 @@ const HomePage: React.FC = () => {
             <h3>프로젝트 완료 및 평가</h3>
             <p>동료 평가를 작성하면 다음 프로젝트에 자동으로 반영됩니다</p>
           </div>
+        </div>
+      </section>
+
+      {/* Project Type Links Section */}
+      <section className="project-types-section" style={{ background: '#f9fafb', padding: '60px 20px' }}>
+        <h2 className="section-title">프로젝트 타입별 탐색</h2>
+        <div className="features-grid" style={{ maxWidth: '1000px', margin: '0 auto' }}>
+          <Link to="/recruits?type=hackathon" className="feature-card" style={{
+            textDecoration: 'none',
+            color: 'inherit',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            // color: 'white'
+          }}>
+            <div className="feature-icon" style={{ fontSize: '3rem' }}>🚀</div>
+            <h3>해커톤</h3>
+            <p>단기간 집중 개발 프로젝트</p>
+          </Link>
+
+          <Link to="/recruits?type=capstone" className="feature-card" style={{
+            textDecoration: 'none',
+            color: 'inherit',
+            background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+            // color: 'white'
+          }}>
+            <div className="feature-icon" style={{ fontSize: '3rem' }}>🎓</div>
+            <h3>캡스톤 디자인</h3>
+            <p>졸업 작품 프로젝트</p>
+          </Link>
+
+          <Link to="/recruits?type=creative" className="feature-card" style={{
+            textDecoration: 'none',
+            color: 'inherit',
+            background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+            // color: 'white'
+          }}>
+            <div className="feature-icon" style={{ fontSize: '3rem' }}>💡</div>
+            <h3>창의학기제</h3>
+            <p>한 학기 집중 창의 프로젝트</p>
+          </Link>
+
+          <Link to="/recruits?type=other" className="feature-card" style={{
+            textDecoration: 'none',
+            color: 'inherit',
+            background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+            // color: 'white'
+          }}>
+            <div className="feature-icon" style={{ fontSize: '3rem' }}>💼</div>
+            <h3>기타 프로젝트</h3>
+            <p>스터디, 대외활동 등</p>
+          </Link>
         </div>
       </section>
 

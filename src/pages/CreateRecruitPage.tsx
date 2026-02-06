@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { recruitService } from '../services/recruitService'; // 서비스 import 추가
 import './CreateRecruitPage.css';
 
 const CreateRecruitPage: React.FC = () => {
@@ -19,9 +20,24 @@ const CreateRecruitPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: API 호출
-    console.log('Form submitted:', formData);
-    navigate('/recruits');
+
+    try {
+      // API 호출
+      await recruitService.createRecruitPost({
+        title: formData.title,
+        description: formData.description,
+        projectType: formData.category,
+        requiredTechStacks: formData.requiredTechStacks,
+        recruitNumber: parseInt(formData.recruitNumber) || 1, // 숫자로 변환
+        deadline: formData.deadline + "T23:59:59" // 시간 포맷 맞춤 (필요시)
+      });
+
+      alert('공고가 성공적으로 등록되었습니다.');
+      navigate('/recruits');
+    } catch (error) {
+      console.error(error);
+      alert('공고 등록에 실패했습니다. 입력 값을 확인해주세요.');
+    }
   };
 
   const addRole = () => {
@@ -93,17 +109,20 @@ const CreateRecruitPage: React.FC = () => {
           </div>
 
           <div className="form-section">
-            <label className="form-label">모집 인원</label>
+            <label className="form-label">모집 인원 (명)</label>
             <input
-              type="text"
+              type="number"
               className="form-input"
-              placeholder="예: FE 0/1, BE 1/2"
+              placeholder="숫자만 입력 (예: 4)"
               value={formData.recruitNumber}
               onChange={(e) => setFormData({ ...formData, recruitNumber: e.target.value })}
               required
             />
           </div>
         </div>
+
+        {/* ... (나머지 역할 및 기술 스택 입력 UI는 기존 코드 유지) ... */}
+        {/* 편의상 중략, 기존 코드의 return 문 내부 UI 부분은 그대로 사용하시면 됩니다. */}
 
         <div className="form-section">
           <label className="form-label">모집 역할 (중복 선택)</label>
@@ -112,13 +131,7 @@ const CreateRecruitPage: React.FC = () => {
               {formData.roles.map((role, index) => (
                 <span key={index} className="tag">
                   {role}
-                  <button
-                    type="button"
-                    className="tag-remove"
-                    onClick={() => removeRole(index)}
-                  >
-                    ×
-                  </button>
+                  <button type="button" className="tag-remove" onClick={() => removeRole(index)}>×</button>
                 </span>
               ))}
             </div>
@@ -129,36 +142,10 @@ const CreateRecruitPage: React.FC = () => {
                 placeholder="역할 입력 후 엔터"
                 value={currentRole}
                 onChange={(e) => setCurrentRole(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addRole();
-                  }
-                }}
+                onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); addRole(); } }}
               />
-              <button type="button" className="btn-add" onClick={addRole}>
-                추가
-              </button>
+              <button type="button" className="btn-add" onClick={addRole}>추가</button>
             </div>
-          </div>
-          <div className="role-suggestions">
-            {['기획/PM', '디자인', '프론트엔드', '백엔드', 'AI/데이터'].map((role) => (
-              <button
-                key={role}
-                type="button"
-                className="role-chip"
-                onClick={() => {
-                  if (!formData.roles.includes(role)) {
-                    setFormData({
-                      ...formData,
-                      roles: [...formData.roles, role],
-                    });
-                  }
-                }}
-              >
-                {role}
-              </button>
-            ))}
           </div>
         </div>
 
@@ -181,13 +168,7 @@ const CreateRecruitPage: React.FC = () => {
               {formData.requiredTechStacks.map((tech, index) => (
                 <span key={index} className="tag tech-tag">
                   {tech}
-                  <button
-                    type="button"
-                    className="tag-remove"
-                    onClick={() => removeTech(index)}
-                  >
-                    ×
-                  </button>
+                  <button type="button" className="tag-remove" onClick={() => removeTech(index)}>×</button>
                 </span>
               ))}
             </div>
@@ -198,16 +179,9 @@ const CreateRecruitPage: React.FC = () => {
                 placeholder="기술 스택 입력 후 엔터"
                 value={currentTech}
                 onChange={(e) => setCurrentTech(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addTech();
-                  }
-                }}
+                onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTech(); } }}
               />
-              <button type="button" className="btn-add" onClick={addTech}>
-                추가
-              </button>
+              <button type="button" className="btn-add" onClick={addTech}>추가</button>
             </div>
           </div>
         </div>

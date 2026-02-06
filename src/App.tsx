@@ -5,13 +5,21 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import RecruitsPage from './pages/RecruitsPage';
 import CreateRecruitPage from './pages/CreateRecruitPage';
+import RecruitDetailPage from './pages/RecruitDetailPage';
+import ProfilePage from './pages/ProfilePage';
 import './App.css';
+import AlarmPage from './pages/AlarmPage';
+import OpenMyPage from './pages/OpenMyPage';
+import MessagePage from './pages/MessagePage';
 
 function AppContent() {
   const location = useLocation();
-  const showSidebar = !['/login', '/'].includes(location.pathname);
+  // 사이드바를 숨길 경로 정의
+  const hideSidebarRoutes = ['/login', '/register', '/'];
+  const showSidebar = !hideSidebarRoutes.includes(location.pathname);
 
   return (
     <div className="App">
@@ -22,9 +30,15 @@ function AppContent() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
             <Route path="/recruits" element={<RecruitsPage />} />
             <Route path="/recruits/new" element={<CreateRecruitPage />} />
-            {/* 추가 라우트는 여기에 작성 */}
+            <Route path="/recruits/:id" element={<RecruitDetailPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/profile/:userId" element={<ProfilePage />} />
+            <Route path="/alarm" element={<AlarmPage />} />
+            <Route path="/openmypage" element={<OpenMyPage />} />
+            <Route path="/messages" element={<MessagePage />} />
           </Routes>
         </main>
       </div>

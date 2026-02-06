@@ -1,11 +1,12 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import './Sidebar.css';
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
-  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const { isAuthenticated, logout } = useAuth();
 
   const isActive = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path + '/');
@@ -30,11 +31,19 @@ const Sidebar: React.FC = () => {
         </Link>
 
         <Link
-          to="/notifications"
-          className={`sidebar-item ${isActive('/notifications') ? 'active' : ''}`}
+          to="/alarm"
+          className={`sidebar-item ${isActive('/alarm') ? 'active' : ''}`}
         >
           <span className="sidebar-icon">🔔</span>
           <span className="sidebar-label">일정 알리미</span>
+        </Link>
+
+        <Link
+          to="/messages"
+          className={`sidebar-item ${isActive('/messages') ? 'active' : ''}`}
+        >
+          <span className="sidebar-icon">💬</span>
+          <span className="sidebar-label">쓱지</span>
         </Link>
 
         <Link
@@ -47,10 +56,18 @@ const Sidebar: React.FC = () => {
       </nav>
 
       <div className="sidebar-footer">
-        <Link to="/logout" className="sidebar-logout">
-          <span className="sidebar-icon">🚪</span>
-          <span className="sidebar-label">로그아웃</span>
-        </Link>
+        {isAuthenticated && (
+          <button
+            onClick={async () => {
+              await logout();
+              navigate('/');
+            }}
+            className="sidebar-logout"
+          >
+            <span className="sidebar-icon">🚪</span>
+            <span className="sidebar-label">로그아웃</span>
+          </button>
+        )}
       </div>
     </aside>
   );
