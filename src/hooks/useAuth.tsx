@@ -39,26 +39,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (studentId: string, password: string) => {
-    // 임시 로그인: 26012345 / password
-    if (studentId === '26012345' && password === 'password') {
-      const tempUser: User = {
-        id: 1,
-        email: 'tempuser@sejong.ac.kr',
-        name: '임시유저',
-        studentId: '26012345',
-        department: '컴퓨터공학과',
-        techStacks: ['React', 'TypeScript'],
-        interests: ['웹', 'AI'],
-        githubUrl: '',
-        profileImage: '',
-        createdAt: new Date().toISOString(),
-      };
-      setUser(tempUser);
-      localStorage.setItem('accessToken', 'temp-access-token');
-      localStorage.setItem('refreshToken', 'temp-refresh-token');
-      return;
-    }
-    // 기존 백엔드 연동
     const response = await authService.login({ studentId, password });
     localStorage.setItem('accessToken', response.accessToken);
     localStorage.setItem('refreshToken', response.refreshToken);

@@ -14,10 +14,10 @@ const Header: React.FC = () => {
         <div className="user-section">
           {isAuthenticated ? (
             <>
-              <span className="user-name">세종인</span>
+              <span className="user-name">{user?.name || '세종인'}</span>
               <span className="user-email">{user?.email || 'guest@sejong.ac.kr'}</span>
               <Link to="/profile" className="user-avatar">
-                <div className="avatar-circle">세</div>
+                <div className="avatar-circle">{user?.name?.charAt(0) || '세'}</div>
               </Link>
             </>
           ) : (
