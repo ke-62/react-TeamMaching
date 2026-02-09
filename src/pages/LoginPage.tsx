@@ -70,22 +70,36 @@ const LoginPage: React.FC = () => {
           </form>
 
           <div className="auth-footer">
-            <div className="test-account-info" style={{
-              background: '#f9fafb',
+            <div className="portal-info" style={{
+              background: '#f0f9ff',
               padding: '1rem',
               borderRadius: '8px',
               marginTop: '1.5rem',
-              border: '1px solid #e5e7eb'
+              border: '1px solid #bae6fd'
             }}>
-              <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.75rem', fontWeight: '600' }}>
-                💡 테스트 계정 안내
+              <p style={{ fontSize: '0.875rem', color: '#0369a1', marginBottom: '0.5rem', fontWeight: '600' }}>
+                🔐 세종대학교 포털 연동
               </p>
-              <p style={{ fontSize: '0.8125rem', color: '#6b7280', lineHeight: '1.6' }}>
-                학번: <strong>20211234</strong> / 비밀번호: <strong>test1234</strong><br />
-                학번: <strong>20211235</strong> / 비밀번호: <strong>test1234</strong>
+              <p style={{ fontSize: '0.8125rem', color: '#075985', lineHeight: '1.6' }}>
+                세종대학교 학사정보시스템의 학번과 비밀번호로 로그인해주세요.
               </p>
-              <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.5rem' }}>
-                ※ 등록되지 않은 학번은 자동으로 계정이 생성됩니다
+              <p style={{ fontSize: '0.75rem', color: '#0c4a6e', marginTop: '0.5rem' }}>
+                ※ 별도의 회원가입 없이 포털 계정으로 바로 이용 가능합니다
+              </p>
+            </div>
+
+            <div className="test-account-info" style={{
+              background: '#fefce8',
+              padding: '1rem',
+              borderRadius: '8px',
+              marginTop: '1rem',
+              border: '1px solid #fde047'
+            }}>
+              <p style={{ fontSize: '0.875rem', color: '#854d0e', marginBottom: '0.5rem', fontWeight: '600' }}>
+                💡 테스트 계정 (개발용)
+              </p>
+              <p style={{ fontSize: '0.8125rem', color: '#a16207', lineHeight: '1.6' }}>
+                학번: <strong>20211234</strong> / 비밀번호: <strong>test1234</strong>
               </p>
             </div>
           </div>
