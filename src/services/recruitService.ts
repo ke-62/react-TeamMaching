@@ -15,50 +15,59 @@ export const recruitService = {
   getRecruitPosts: async (params?: {
     page?: number;
     size?: number;
+    status?: string;
+    search?: string;
+    role?: string;
     projectType?: string;
     techStack?: string;
   }): Promise<{ content: RecruitPost[]; totalPages: number; totalElements: number }> => {
-    const response = await apiClient.get('/recruits', { params });
+    const response = await apiClient.get('/api/v1/projects', { params });
     return response.data;
   },
 
   // 모집 공고 상세 조회
   getRecruitPost: async (id: number): Promise<RecruitPost> => {
-    const response = await apiClient.get(`/recruits/${id}`);
+    const response = await apiClient.get(`/api/v1/projects/${id}`);
     return response.data;
   },
 
   // 모집 공고 생성
   createRecruitPost: async (data: CreateRecruitPostRequest): Promise<RecruitPost> => {
-    const response = await apiClient.post('/recruits', data);
+    const response = await apiClient.post('/api/v1/projects', data);
     return response.data;
   },
 
   // 모집 공고 수정
   updateRecruitPost: async (id: number, data: Partial<CreateRecruitPostRequest>): Promise<RecruitPost> => {
-    const response = await apiClient.put(`/recruits/${id}`, data);
+    const response = await apiClient.put(`/api/v1/projects/${id}`, data);
+    return response.data;
+  },
+
+  // 프로젝트 상태 변경 (모집중 -> 진행중 -> 완료)
+  updateProjectStatus: async (id: number, status: 'IN_PROGRESS' | 'COMPLETED'): Promise<RecruitPost> => {
+    const response = await apiClient.patch(`/api/v1/projects/${id}`, { status });
     return response.data;
   },
 
   // 모집 공고 삭제
   deleteRecruitPost: async (id: number): Promise<void> => {
-    await apiClient.delete(`/recruits/${id}`);
+    await apiClient.delete(`/api/v1/projects/${id}`);
   },
 
   // 지원하기
   applyToRecruit: async (recruitId: number, motivation: string): Promise<Application> => {
-    const response = await apiClient.post(`/recruits/${recruitId}/apply`, { motivation });
+    const response = await apiClient.post(`/api/v1/projects/${recruitId}/apply`, { motivation });
     return response.data;
   },
 
   // 지원 취소
   cancelApplication: async (recruitId: number, applicationId: number): Promise<void> => {
-    await apiClient.delete(`/recruits/${recruitId}/applications/${applicationId}`);
+    await apiClient.delete(`/api/v1/projects/${recruitId}/applications/${applicationId}`);
   },
 
   // 지원자 목록 조회 (모집 공고 작성자용)
   getApplications: async (recruitId: number): Promise<Application[]> => {
-    const response = await apiClient.get(`/recruits/${recruitId}/applications`);
+    const response = await apiClient.get(`/api/v1/projects/${recruitId}/applications`);
     return response.data;
   },
 
@@ -68,13 +77,13 @@ export const recruitService = {
     applicationId: number,
     status: 'accepted' | 'rejected'
   ): Promise<Application> => {
-    const response = await apiClient.patch(`/recruits/${recruitId}/applications/${applicationId}`, { status });
+    const response = await apiClient.patch(`/api/v1/projects/${recruitId}/applications/${applicationId}`, { status });
     return response.data;
   },
 
   // AI 추천 팀원 조회
   getRecommendedMembers: async (recruitId: number): Promise<RecommendationResult[]> => {
-    const response = await apiClient.get(`/recruits/${recruitId}/recommendations`);
+    const response = await apiClient.get(`/api/v1/projects/${recruitId}/recommendations`);
     return response.data;
   },
 };

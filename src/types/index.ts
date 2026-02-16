@@ -21,6 +21,7 @@ export interface RecruitPost {
   requiredTechStacks: string[];
   recruitNumber: number;
   deadline: string;
+  status: 'RECRUITING' | 'IN_PROGRESS' | 'COMPLETED';
   authorId: number;
   author: User;
   createdAt: string;
