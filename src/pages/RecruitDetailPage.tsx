@@ -39,6 +39,7 @@ const RecruitDetailPage: React.FC = () => {
                 requiredTechStacks: ['React', 'TypeScript', 'Node.js'],
                 recruitNumber: 3,
                 deadline: '2026-02-28',
+                status: 'RECRUITING',
                 authorId: 1,
                 author: {
                     id: 1,

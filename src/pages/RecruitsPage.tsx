@@ -40,6 +40,7 @@ const RecruitsPage: React.FC = () => {
           requiredTechStacks: ['React', 'Python', 'TensorFlow'],
           recruitNumber: 3,
           deadline: '2026-02-15',
+          status: 'RECRUITING',
           authorId: 1,
           author: {
             id: 1,
@@ -62,6 +63,7 @@ const RecruitsPage: React.FC = () => {
           requiredTechStacks: ['Flutter', 'Firebase', 'Figma'],
           recruitNumber: 2,
           deadline: '2026-02-28',
+          status: 'RECRUITING',
           authorId: 2,
           author: {
             id: 2,
@@ -84,6 +86,7 @@ const RecruitsPage: React.FC = () => {
           requiredTechStacks: ['Solidity', 'Web3.js', 'React'],
           recruitNumber: 4,
           deadline: '2026-01-25',
+          status: 'IN_PROGRESS',
           authorId: 3,
           author: {
             id: 3,
@@ -106,6 +109,7 @@ const RecruitsPage: React.FC = () => {
           requiredTechStacks: ['Algorithm', 'Python', 'C++'],
           recruitNumber: 5,
           deadline: '2026-01-20',
+          status: 'RECRUITING',
           authorId: 4,
           author: {
             id: 4,

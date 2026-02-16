@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (studentId: string, password: string) => {
-    // 테스트 계정 - 백엔드 없이 프론트엔드만 테스트
+    // 테스트 계정 - 디자인 확인용 (백엔드 호출 없음)
     if (studentId === '20211234' && password === 'test1234') {
       const mockUser: User = {
         id: 999,
@@ -77,7 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    // 실제 백엔드 API 호출
+    // 실제 계정 - 백엔드 API 호출
     const response = await authService.login({ studentId, password });
     localStorage.setItem('accessToken', response.accessToken);
     localStorage.setItem('refreshToken', response.refreshToken);
