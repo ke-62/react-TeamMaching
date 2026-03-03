@@ -43,8 +43,8 @@ export const recruitService = {
     return response.data;
   },
 
-  // 프로젝트 상태 변경 (모집중 -> 진행중 -> 완료)
-  updateProjectStatus: async (id: number, status: 'IN_PROGRESS' | 'COMPLETED'): Promise<RecruitPost> => {
+  // 프로젝트 상태 변경 (모집중 <-> 마감)
+  updateProjectStatus: async (id: number, status: 'RECRUITING' | 'IN_PROGRESS' | 'COMPLETED'): Promise<RecruitPost> => {
     const response = await apiClient.patch(`/v1/projects/${id}`, { status });
     return response.data;
   },
@@ -56,7 +56,7 @@ export const recruitService = {
 
   // 지원하기
   applyToRecruit: async (recruitId: number, motivation: string): Promise<Application> => {
-    const response = await apiClient.post(`/v1/projects/${recruitId}/apply`, { motivation });
+    const response = await apiClient.post(`/v1/projects/${recruitId}/applications`, { motivation });
     return response.data;
   },
 

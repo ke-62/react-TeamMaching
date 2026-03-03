@@ -69,3 +69,15 @@ export interface RecommendationResult {
   matchScore: number;
   matchReasons: Record<string, string>;  // 예: { "기술 스택": "80% 일치", "동료 평가": "평균 4.5점" }
 }
+
+// 댓글 타입
+export interface Comment {
+  id: number;
+  recruitPostId: number;
+  authorId: number;
+  authorName: string;
+  authorDepartment: string;
+  content: string;
+  isSecret: boolean;  // 비밀글 여부
+  createdAt: string;
+}

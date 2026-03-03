@@ -165,6 +165,28 @@
   font-weight: 400;
 }
 
+/* 모집중 필터 토글 */
+.recruiting-filter-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.recruiting-filter-toggle input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  accent-color: #16a34a;
+}
+.recruiting-filter-toggle:has(input:checked) span {
+  color: #16a34a;
+}
+
 .btn-create,
 .btn-create-empty {
   display: inline-flex;

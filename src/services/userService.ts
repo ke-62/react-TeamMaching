@@ -51,9 +51,9 @@ export const userService = {
     return response.data;
   },
 
-  // GitHub 연동
+  // GitHub 연동 (PUT /users/me 로 githubUrl 저장)
   connectGithub: async (githubUrl: string): Promise<void> => {
-    await apiClient.post('/users/me/github', { githubUrl });
+    await apiClient.put('/users/me', { githubUrl });
   },
 
   // GitHub 레포지토리 동기화

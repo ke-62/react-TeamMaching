@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { RecruitPost } from '../types';
 import { recruitService } from '../services/recruitService';
 import './RecruitsPage.css';
@@ -7,6 +7,7 @@ import './RecruitsPage.css';
 type TabType = 'hackathon' | 'capstone' | 'creative' | 'other' | '';
 
 const RecruitsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const urlType = searchParams.get('type') as TabType || 'hackathon';
 
@@ -14,6 +15,7 @@ const RecruitsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>(urlType);
+  const [showRecruitingOnly, setShowRecruitingOnly] = useState(false);
   const [filter, setFilter] = useState({
     projectType: urlType,
     techStack: '',
@@ -29,108 +31,9 @@ const RecruitsPage: React.FC = () => {
       });
       setRecruits(response.content);
     } catch (err) {
-      // 백엔드 연결 실패 시 임시 mock 데이터 사용
-      console.log('백엔드 미연결, 임시 데이터 사용');
-      const mockRecruits: RecruitPost[] = [
-        {
-          id: 1,
-          title: '[해커톤] 2026 AI 해커톤 팀원 모집',
-          description: 'AI 기반 서비스를 개발할 팀원을 찾습니다. React, Python 경험자 우대합니다.',
-          projectType: 'hackathon',
-          requiredTechStacks: ['React', 'Python', 'TensorFlow'],
-          recruitNumber: 3,
-          deadline: '2026-02-15',
-          status: 'RECRUITING',
-          authorId: 1,
-          author: {
-            id: 1,
-            email: 'student1@sejong.ac.kr',
-            name: '김철수',
-            studentId: '20211234',
-            department: '컴퓨터공학과',
-            techStacks: ['React', 'Node.js'],
-            interests: ['AI', '웹개발'],
-            createdAt: '2025-01-01',
-          },
-          createdAt: '2026-01-05',
-          updatedAt: '2026-01-05',
-        },
-        {
-          id: 2,
-          title: '[캡스톤] 졸업작품 개발 팀원 모집',
-          description: '모바일 앱 개발 프로젝트입니다. Flutter 또는 React Native 경험자 환영합니다.',
-          projectType: 'capstone',
-          requiredTechStacks: ['Flutter', 'Firebase', 'Figma'],
-          recruitNumber: 2,
-          deadline: '2026-02-28',
-          status: 'RECRUITING',
-          authorId: 2,
-          author: {
-            id: 2,
-            email: 'student2@sejong.ac.kr',
-            name: '이영희',
-            studentId: '20201111',
-            department: '소프트웨어학과',
-            techStacks: ['Flutter', 'Firebase'],
-            interests: ['모바일', 'UI/UX'],
-            createdAt: '2025-01-01',
-          },
-          createdAt: '2026-01-04',
-          updatedAt: '2026-01-04',
-        },
-        {
-          id: 3,
-          title: '[창의학기제] 블록체인 프로젝트 팀원 구함',
-          description: '블록체인 기술을 활용한 창의적인 프로젝트를 함께할 팀원을 찾습니다.',
-          projectType: 'creative',
-          requiredTechStacks: ['Solidity', 'Web3.js', 'React'],
-          recruitNumber: 4,
-          deadline: '2026-01-25',
-          status: 'IN_PROGRESS',
-          authorId: 3,
-          author: {
-            id: 3,
-            email: 'student3@sejong.ac.kr',
-            name: '박민수',
-            studentId: '20221234',
-            department: '컴퓨터공학과',
-            techStacks: ['Blockchain', 'Solidity'],
-            interests: ['블록체인', 'DApp'],
-            createdAt: '2025-01-01',
-          },
-          createdAt: '2026-01-03',
-          updatedAt: '2026-01-03',
-        },
-        {
-          id: 4,
-          title: '[기타] 스터디 그룹 멤버 모집',
-          description: '알고리즘 코딩테스트 준비 스터디입니다. 주 3회 온라인 진행 예정입니다.',
-          projectType: 'other',
-          requiredTechStacks: ['Algorithm', 'Python', 'C++'],
-          recruitNumber: 5,
-          deadline: '2026-01-20',
-          status: 'RECRUITING',
-          authorId: 4,
-          author: {
-            id: 4,
-            email: 'student4@sejong.ac.kr',
-            name: '최지우',
-            studentId: '20231111',
-            department: '정보보호학과',
-            techStacks: ['Algorithm', 'Python'],
-            interests: ['코딩테스트', '알고리즘'],
-            createdAt: '2025-01-01',
-          },
-          createdAt: '2026-01-02',
-          updatedAt: '2026-01-02',
-        },
-      ];
-
-      // 현재 선택된 프로젝트 타입에 맞는 데이터만 필터링
-      const filteredMockData = mockRecruits.filter(
-        recruit => recruit.projectType === (filter.projectType || 'hackathon')
-      );
-      setRecruits(filteredMockData);
+      console.error('공고 목록 불러오기 실패', err);
+      setError('공고를 불러오는 데 실패했습니다. 서버가 실행 중인지 확인해주세요.');
+      setRecruits([]);
     } finally {
       setIsLoading(false);
     }
@@ -153,6 +56,10 @@ const RecruitsPage: React.FC = () => {
     setActiveTab(tab);
     setFilter({ ...filter, projectType: tab || 'hackathon' });
   };
+
+  const displayedRecruits = showRecruitingOnly
+    ? recruits.filter(r => r.status === 'RECRUITING')
+    : recruits;
 
   return (
     <div className="recruits-page">
@@ -212,11 +119,21 @@ const RecruitsPage: React.FC = () => {
 
         {/* 헤더 영역 */}
         <div className="section-header">
-          <h2>해커톤 모집 공고 <span className="count">(0)</span></h2>
-          <Link to="/recruits/new" className="btn-create">
-            <span className="plus-icon">⊕</span>
-            새 공고 등록
-          </Link>
+          <h2>해커톤 모집 공고 <span className="count">({displayedRecruits.length})</span></h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <label className="recruiting-filter-toggle">
+              <input
+                type="checkbox"
+                checked={showRecruitingOnly}
+                onChange={e => setShowRecruitingOnly(e.target.checked)}
+              />
+              <span>모집중만 보기</span>
+            </label>
+            <Link to="/recruits/new" className="btn-create">
+              <span className="plus-icon">⊕</span>
+              새 공고 등록
+            </Link>
+          </div>
         </div>
 
         {/* 로딩 상태 */}
@@ -228,23 +145,25 @@ const RecruitsPage: React.FC = () => {
 
         {/* 에러 상태 */}
         {error && (
-          <div className="error-container">
-            <p>{error}</p>
+          <div style={{ textAlign: 'center', padding: '60px 20px', color: '#888' }}>
+            <p style={{ fontSize: '32px', marginBottom: '12px' }}>🔌</p>
+            <p style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px', color: '#555' }}>서버에 연결할 수 없습니다</p>
+            <p style={{ fontSize: '13px', color: '#aaa' }}>백엔드 서버가 실행 중인지 확인해주세요. (localhost:8080)</p>
           </div>
         )}
 
         {/* 공고 목록 */}
         {!isLoading && !error && (
           <div className="recruits-grid">
-            {recruits.length === 0 ? (
+            {displayedRecruits.length === 0 ? (
               <div className="empty-state">
-                <p>등록된 모집 공고가 없습니다.</p>
+                <p>{showRecruitingOnly ? '모집중인 공고가 없습니다.' : '등록된 모집 공고가 없습니다.'}</p>
                 <Link to="/recruits/new" className="btn-create-empty">
                   첫 공고 작성하기
                 </Link>
               </div>
             ) : (
-              recruits.map((recruit) => (
+              displayedRecruits.map((recruit) => (
                 <div
                   key={recruit.id}
                   className="recruit-card"
@@ -286,12 +205,37 @@ const RecruitsPage: React.FC = () => {
                       </div>
                     </div>
                   </Link>
-                  <div className="author-info" onClick={(e) => {
-                    e.stopPropagation();
-                    window.location.href = `/profile/${recruit.author.id}`;
-                  }} style={{ cursor: 'pointer', padding: '10px 0', borderTop: '1px solid #eee' }}>
-                    <span style={{ color: '#8B1538', fontWeight: 'bold' }}>{recruit.author.name}</span>
-                    <span className="department">{recruit.author.department}</span>
+                  <div
+                    className="author-info"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      navigate(`/profile/${recruit.author.id}`);
+                    }}
+                    style={{
+                      cursor: 'pointer', padding: '10px 12px',
+                      borderTop: '1px solid #eee', display: 'flex',
+                      alignItems: 'center', gap: '6px',
+                      transition: 'background 0.15s', borderRadius: '0 0 8px 8px'
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#fff5f7')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    title={`${recruit.author.name} 프로필 보기`}
+                  >
+                    <div style={{
+                      width: '24px', height: '24px', borderRadius: '50%',
+                      background: '#8B1538', color: 'white',
+                      fontSize: '11px', fontWeight: 'bold',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      {recruit.author.name[0]}
+                    </div>
+                    <span style={{ color: '#8B1538', fontWeight: '600', fontSize: '13px' }}>
+                      {recruit.author.name}
+                    </span>
+                    <span style={{ color: '#888', fontSize: '12px' }}>{recruit.author.department}</span>
+                    <span style={{ marginLeft: 'auto', fontSize: '11px', color: '#ccc' }}>프로필 →</span>
                   </div>
                 </div>
               ))
