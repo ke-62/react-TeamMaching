@@ -12,11 +12,22 @@ const CreateRecruitPage: React.FC = () => {
     roles: [] as string[],
     description: '',
     requiredTechStacks: [] as string[],
-    deadline: '',
   });
 
-  const [currentRole, setCurrentRole] = useState('');
+  const [etcRoleText, setEtcRoleText] = useState('');
   const [currentTech, setCurrentTech] = useState('');
+
+  const ROLE_OPTIONS = ['디자인', '프론트엔드', '백엔드', '기획', 'AI', '기타'];
+
+  const toggleRole = (role: string) => {
+    const isSelected = formData.roles.includes(role);
+    if (isSelected) {
+      if (role === '기타') setEtcRoleText('');
+      setFormData({ ...formData, roles: formData.roles.filter(r => r !== role) });
+    } else {
+      setFormData({ ...formData, roles: [...formData.roles, role] });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,8 +39,7 @@ const CreateRecruitPage: React.FC = () => {
         description: formData.description,
         projectType: formData.category,
         requiredTechStacks: formData.requiredTechStacks,
-        recruitNumber: parseInt(formData.recruitNumber) || 1, // 숫자로 변환
-        deadline: formData.deadline + "T23:59:59" // 시간 포맷 맞춤 (필요시)
+        recruitNumber: parseInt(formData.recruitNumber) || 1,
       });
 
       alert('공고가 성공적으로 등록되었습니다.');
@@ -38,23 +48,6 @@ const CreateRecruitPage: React.FC = () => {
       console.error(error);
       alert('공고 등록에 실패했습니다. 입력 값을 확인해주세요.');
     }
-  };
-
-  const addRole = () => {
-    if (currentRole.trim()) {
-      setFormData({
-        ...formData,
-        roles: [...formData.roles, currentRole.trim()],
-      });
-      setCurrentRole('');
-    }
-  };
-
-  const removeRole = (index: number) => {
-    setFormData({
-      ...formData,
-      roles: formData.roles.filter((_, i) => i !== index),
-    });
   };
 
   const addTech = () => {
@@ -126,27 +119,27 @@ const CreateRecruitPage: React.FC = () => {
 
         <div className="form-section">
           <label className="form-label">모집 역할 (중복 선택)</label>
-          <div className="tag-input-container">
-            <div className="tag-list">
-              {formData.roles.map((role, index) => (
-                <span key={index} className="tag">
-                  {role}
-                  <button type="button" className="tag-remove" onClick={() => removeRole(index)}>×</button>
-                </span>
-              ))}
-            </div>
-            <div className="tag-input-group">
-              <input
-                type="text"
-                className="form-input"
-                placeholder="역할 입력 후 엔터"
-                value={currentRole}
-                onChange={(e) => setCurrentRole(e.target.value)}
-                onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); addRole(); } }}
-              />
-              <button type="button" className="btn-add" onClick={addRole}>추가</button>
-            </div>
+          <div className="role-options">
+            {ROLE_OPTIONS.map(role => (
+              <button
+                key={role}
+                type="button"
+                className={`role-chip ${formData.roles.includes(role) ? 'role-chip-selected' : ''}`}
+                onClick={() => toggleRole(role)}
+              >
+                {role}
+              </button>
+            ))}
           </div>
+          {formData.roles.includes('기타') && (
+            <input
+              type="text"
+              className="form-input role-etc-input"
+              placeholder="역할을 직접 입력해주세요"
+              value={etcRoleText}
+              onChange={(e) => setEtcRoleText(e.target.value)}
+            />
+          )}
         </div>
 
         <div className="form-section">
@@ -184,17 +177,6 @@ const CreateRecruitPage: React.FC = () => {
               <button type="button" className="btn-add" onClick={addTech}>추가</button>
             </div>
           </div>
-        </div>
-
-        <div className="form-section">
-          <label className="form-label">모집 마감일</label>
-          <input
-            type="date"
-            className="form-input"
-            value={formData.deadline}
-            onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-            required
-          />
         </div>
 
         <div className="form-actions">

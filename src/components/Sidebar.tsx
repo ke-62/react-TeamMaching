@@ -43,7 +43,23 @@ const Sidebar: React.FC = () => {
           className={`sidebar-item ${isActive('/messages') ? 'active' : ''}`}
         >
           <span className="sidebar-icon">💬</span>
-          <span className="sidebar-label">쓱지</span>
+          <span className="sidebar-label">쪽지</span>
+        </Link>
+
+        <Link
+          to="/my-applications"
+          className={`sidebar-item ${isActive('/my-applications') ? 'active' : ''}`}
+        >
+          <span className="sidebar-icon">📋</span>
+          <span className="sidebar-label">내 지원 현황</span>
+        </Link>
+
+        <Link
+          to="/my-posts"
+          className={`sidebar-item ${isActive('/my-posts') ? 'active' : ''}`}
+        >
+          <span className="sidebar-icon">📝</span>
+          <span className="sidebar-label">내 공고 관리</span>
         </Link>
 
         <Link

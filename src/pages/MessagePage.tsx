@@ -1,35 +1,19 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { messageService, RoomResponse, MessageResponse } from '../services/messageService';
 import './MessagePage.css';
 
-interface Message {
-    id: number;
-    senderId: number;
-    senderName: string;
-    receiverId: number;
-    receiverName: string;
-    content: string;
-    createdAt: string;
-}
-
-interface Conversation {
-    partnerId: number;
-    partnerName: string;
-    partnerDepartment: string;
-    lastMessage: string;
-    lastAt: string;
+interface Conversation extends RoomResponse {
+    messages: MessageResponse[];
     unread: number;
-    messages: Message[];
 }
 
-// 미니 프로필 팝업 타입
 interface MiniProfile {
     id: number;
     name: string;
     department: string;
 }
-
 
 function formatTime(isoString: string) {
     const date = new Date(isoString);
@@ -52,76 +36,97 @@ const MessagePage: React.FC = () => {
     const myName = user?.name || '나';
 
     const [conversations, setConversations] = useState<Conversation[]>([]);
-    const [selectedId, setSelectedId] = useState<number | null>(null);
+    const [selectedPartnerId, setSelectedPartnerId] = useState<number | null>(null);
     const [inputText, setInputText] = useState('');
-    const [showNewDM, setShowNewDM] = useState(false);
-    const [newDMTarget, setNewDMTarget] = useState('');
     const [miniProfile, setMiniProfile] = useState<MiniProfile | null>(null);
     const chatBottomRef = useRef<HTMLDivElement>(null);
 
-    // ── 모집글에서 "쪽지 보내기"로 넘어왔을 때: 자동으로 대화 열기 ──
+    const selectedConv = conversations.find(c => c.partnerId === selectedPartnerId) || null;
+
+    // 대화 목록 로드
+    const loadRooms = useCallback(async () => {
+        try {
+            const rooms = await messageService.getRooms();
+            setConversations(prev => rooms.map(r => {
+                const existing = prev.find(c => c.partnerId === r.partnerId);
+                return {
+                    ...r,
+                    messages: existing?.messages || [],
+                    unread: existing?.unread || 0,
+                };
+            }));
+        } catch {
+            // 비로그인 등 에러는 무시
+        }
+    }, []);
+
+    // 메시지 로드
+    const loadMessages = useCallback(async (roomId: number, partnerId: number) => {
+        try {
+            const msgs = await messageService.getMessages(roomId);
+            setConversations(prev => prev.map(c =>
+                c.partnerId === partnerId ? { ...c, messages: msgs, unread: 0 } : c
+            ));
+        } catch {
+            // ignore
+        }
+    }, []);
+
+    // 초기 대화 목록 + 3초 폴링
+    useEffect(() => {
+        if (!user) return;
+        loadRooms();
+        const interval = setInterval(loadRooms, 3000);
+        return () => clearInterval(interval);
+    }, [user, loadRooms]);
+
+    // 선택된 방 메시지 3초 폴링
+    useEffect(() => {
+        if (!selectedConv) return;
+        loadMessages(selectedConv.roomId, selectedConv.partnerId);
+        const interval = setInterval(() => {
+            loadMessages(selectedConv.roomId, selectedConv.partnerId);
+        }, 3000);
+        return () => clearInterval(interval);
+    }, [selectedPartnerId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // 다른 페이지에서 쪽지 보내기로 진입
     useEffect(() => {
         const state = location.state as { partnerId?: number; partnerName?: string; partnerDepartment?: string } | null;
-        if (!state?.partnerId || !state?.partnerName) return;
+        if (!state?.partnerId || !user) return;
 
-        const { partnerId, partnerName, partnerDepartment = '' } = state;
-
-        setConversations(prev => {
-            const existing = prev.find(c => c.partnerId === partnerId);
-            if (existing) {
-                setSelectedId(partnerId);
-                return prev;
+        const openRoom = async () => {
+            try {
+                const room = await messageService.createRoom(state.partnerId!);
+                await loadRooms();
+                setSelectedPartnerId(room.partnerId);
+            } catch {
+                // ignore
             }
-            const newConv: Conversation = {
-                partnerId,
-                partnerName,
-                partnerDepartment,
-                lastMessage: '',
-                lastAt: new Date().toISOString(),
-                unread: 0,
-                messages: [],
-            };
-            setSelectedId(partnerId);
-            return [newConv, ...prev];
-        });
-
-        // state 소비 (뒤로가기 시 재실행 방지)
+        };
+        openRoom();
         window.history.replaceState({}, '');
-    }, [location.state]);
+    }, [location.state, user]);
 
-    const selectedConv = conversations.find(c => c.partnerId === selectedId) || null;
-
+    // 스크롤 아래로
     useEffect(() => {
         chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [selectedConv?.messages.length, selectedId]);
+    }, [selectedConv?.messages.length]);
 
-    useEffect(() => {
-        if (selectedId !== null) {
-            setConversations(prev =>
-                prev.map(c => c.partnerId === selectedId ? { ...c, unread: 0 } : c)
-            );
-        }
-    }, [selectedId]);
-
-    const handleSend = () => {
+    const handleSend = async () => {
         if (!inputText.trim() || !selectedConv) return;
-        const newMsg: Message = {
-            id: Date.now(),
-            senderId: myId,
-            senderName: myName,
-            receiverId: selectedConv.partnerId,
-            receiverName: selectedConv.partnerName,
-            content: inputText.trim(),
-            createdAt: new Date().toISOString(),
-        };
-        setConversations(prev =>
-            prev.map(c =>
+        const text = inputText.trim();
+        setInputText('');
+        try {
+            const newMsg = await messageService.sendMessage(selectedConv.roomId, text);
+            setConversations(prev => prev.map(c =>
                 c.partnerId === selectedConv.partnerId
                     ? { ...c, messages: [...c.messages, newMsg], lastMessage: newMsg.content, lastAt: newMsg.createdAt }
                     : c
-            )
-        );
-        setInputText('');
+            ));
+        } catch {
+            setInputText(text);
+        }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -131,57 +136,30 @@ const MessagePage: React.FC = () => {
         }
     };
 
-    const handleStartNewDM = () => {
-        if (!newDMTarget.trim()) return;
-        const existing = conversations.find(c => c.partnerName === newDMTarget.trim());
-        if (existing) {
-            setSelectedId(existing.partnerId);
-            setShowNewDM(false);
-            setNewDMTarget('');
-            return;
-        }
-        const newConv: Conversation = {
-            partnerId: Date.now(),
-            partnerName: newDMTarget.trim(),
-            partnerDepartment: '',
-            lastMessage: '',
-            lastAt: new Date().toISOString(),
-            unread: 0,
-            messages: [],
-        };
-        setConversations(prev => [newConv, ...prev]);
-        setSelectedId(newConv.partnerId);
-        setShowNewDM(false);
-        setNewDMTarget('');
-    };
-
-    // 아바타 클릭 → 미니 프로필 팝업
     const handleAvatarClick = (conv: Conversation) => {
         setMiniProfile({ id: conv.partnerId, name: conv.partnerName, department: conv.partnerDepartment });
     };
 
     return (
         <div className="dm-layout">
-            {/* ── 좌측: 대화 목록 ── */}
+            {/* 좌측: 대화 목록 */}
             <div className="dm-sidebar">
                 <div className="dm-sidebar-header">
                     <span className="dm-sidebar-title">{myName}</span>
-                    <button className="dm-new-btn" onClick={() => setShowNewDM(true)} title="새 메시지">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 20h9" />
-                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                        </svg>
-                    </button>
                 </div>
 
                 <div className="dm-list">
+                    {conversations.length === 0 && (
+                        <div style={{ padding: '24px 16px', color: '#aaa', fontSize: '13px', textAlign: 'center' }}>
+                            아직 대화가 없습니다.<br />프로필에서 쪽지를 보내보세요.
+                        </div>
+                    )}
                     {conversations.map(conv => (
                         <div
                             key={conv.partnerId}
-                            className={`dm-list-item ${selectedId === conv.partnerId ? 'active' : ''}`}
-                            onClick={() => setSelectedId(conv.partnerId)}
+                            className={`dm-list-item ${selectedPartnerId === conv.partnerId ? 'active' : ''}`}
+                            onClick={() => setSelectedPartnerId(conv.partnerId)}
                         >
-                            {/* 아바타 클릭 → 미니 프로필 */}
                             <div
                                 className="dm-avatar"
                                 onClick={e => { e.stopPropagation(); handleAvatarClick(conv); }}
@@ -206,18 +184,15 @@ const MessagePage: React.FC = () => {
                 </div>
             </div>
 
-            {/* ── 우측: 채팅창 ── */}
+            {/* 우측: 채팅창 */}
             <div className="dm-chat">
                 {selectedConv ? (
                     <>
-                        {/* 채팅 헤더 */}
                         <div className="dm-chat-header">
-                            {/* 헤더 아바타 클릭 → 미니 프로필 */}
                             <div
                                 className="dm-avatar small"
                                 style={{ cursor: 'pointer' }}
                                 onClick={() => handleAvatarClick(selectedConv)}
-                                title="프로필 보기"
                             >
                                 {selectedConv.partnerName[0]}
                             </div>
@@ -237,15 +212,10 @@ const MessagePage: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* 메시지 버블 영역 */}
                         <div className="dm-messages">
                             {selectedConv.messages.length === 0 && (
                                 <div className="dm-empty-chat">
-                                    <div
-                                        className="dm-avatar large"
-                                        style={{ cursor: 'pointer' }}
-                                        onClick={() => handleAvatarClick(selectedConv)}
-                                    >
+                                    <div className="dm-avatar large" style={{ cursor: 'pointer' }} onClick={() => handleAvatarClick(selectedConv)}>
                                         {selectedConv.partnerName[0]}
                                     </div>
                                     <p className="dm-empty-name">{selectedConv.partnerName}</p>
@@ -268,12 +238,7 @@ const MessagePage: React.FC = () => {
                                         {!isMine && (
                                             <div className="dm-bubble-avatar">
                                                 {showAvatar ? (
-                                                    <div
-                                                        className="dm-avatar tiny"
-                                                        style={{ cursor: 'pointer' }}
-                                                        onClick={() => handleAvatarClick(selectedConv)}
-                                                        title="프로필 보기"
-                                                    >
+                                                    <div className="dm-avatar tiny" style={{ cursor: 'pointer' }} onClick={() => handleAvatarClick(selectedConv)}>
                                                         {msg.senderName[0]}
                                                     </div>
                                                 ) : (
@@ -293,7 +258,6 @@ const MessagePage: React.FC = () => {
                             <div ref={chatBottomRef} />
                         </div>
 
-                        {/* 입력창 */}
                         <div className="dm-input-bar">
                             <input
                                 className="dm-input"
@@ -317,12 +281,12 @@ const MessagePage: React.FC = () => {
                         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.5">
                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                         </svg>
-                        <p>대화를 선택하거나 새 메시지를 보내보세요</p>
+                        <p>대화를 선택해주세요</p>
                     </div>
                 )}
             </div>
 
-            {/* ── 미니 프로필 팝업 ── */}
+            {/* 미니 프로필 팝업 */}
             {miniProfile && (
                 <div className="dm-modal-overlay" onClick={() => setMiniProfile(null)}>
                     <div className="dm-mini-profile" onClick={e => e.stopPropagation()}>
@@ -335,49 +299,12 @@ const MessagePage: React.FC = () => {
                             <p className="dm-mini-dept">{miniProfile.department}</p>
                         )}
                         <div className="dm-mini-actions">
-                            <button
-                                className="dm-mini-btn profile"
-                                onClick={() => { navigate(`/profile/${miniProfile.id}`); setMiniProfile(null); }}
-                            >
+                            <button className="dm-mini-btn profile" onClick={() => { navigate(`/profile/${miniProfile.id}`); setMiniProfile(null); }}>
                                 👤 프로필 보기
                             </button>
-                            <button
-                                className="dm-mini-btn message"
-                                onClick={() => {
-                                    setSelectedId(miniProfile.id);
-                                    setMiniProfile(null);
-                                }}
-                            >
+                            <button className="dm-mini-btn message" onClick={() => { setSelectedPartnerId(miniProfile.id); setMiniProfile(null); }}>
                                 💬 쪽지 보내기
                             </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* ── 새 DM 모달 ── */}
-            {showNewDM && (
-                <div className="dm-modal-overlay" onClick={() => setShowNewDM(false)}>
-                    <div className="dm-modal" onClick={e => e.stopPropagation()}>
-                        <div className="dm-modal-header">
-                            <span>새 메시지</span>
-                            <button className="dm-modal-close" onClick={() => setShowNewDM(false)}>✕</button>
-                        </div>
-                        <div className="dm-modal-body">
-                            <label className="dm-modal-label">받는 사람</label>
-                            <input
-                                className="dm-modal-input"
-                                type="text"
-                                placeholder="이름 또는 학번 입력"
-                                value={newDMTarget}
-                                onChange={e => setNewDMTarget(e.target.value)}
-                                onKeyDown={e => e.key === 'Enter' && handleStartNewDM()}
-                                autoFocus
-                            />
-                        </div>
-                        <div className="dm-modal-footer">
-                            <button className="dm-modal-cancel" onClick={() => setShowNewDM(false)}>취소</button>
-                            <button className="dm-modal-confirm" onClick={handleStartNewDM}>채팅 시작</button>
                         </div>
                     </div>
                 </div>

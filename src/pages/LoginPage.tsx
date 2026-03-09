@@ -21,7 +21,7 @@ const LoginPage: React.FC = () => {
       await login(studentId, password);
       navigate('/recruits');
     } catch (err: any) {
-      setError(err.response?.data?.message || '학번 또는 비밀번호가 일치하지 않습니다.');
+      setError(err.response?.data?.error?.message || err.response?.data?.message || '학번 또는 비밀번호가 일치하지 않습니다.');
     } finally {
       setIsLoading(false);
     }

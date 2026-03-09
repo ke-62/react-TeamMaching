@@ -14,6 +14,8 @@ import './App.css';
 import AlarmPage from './pages/AlarmPage';
 import OpenMyPage from './pages/OpenMyPage';
 import MessagePage from './pages/MessagePage';
+import MyApplicationsPage from './pages/MyApplicationsPage';
+import MyPostsPage from './pages/MyPostsPage';
 
 function AppContent() {
   const location = useLocation();
@@ -39,6 +41,8 @@ function AppContent() {
             <Route path="/alarm" element={<AlarmPage />} />
             <Route path="/openmypage" element={<OpenMyPage />} />
             <Route path="/messages" element={<MessagePage />} />
+            <Route path="/my-applications" element={<MyApplicationsPage />} />
+            <Route path="/my-posts" element={<MyPostsPage />} />
           </Routes>
         </main>
       </div>

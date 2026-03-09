@@ -37,6 +37,10 @@ export interface Application {
   motivation: string;
   status: 'pending' | 'accepted' | 'rejected';
   createdAt: string;
+  memo?: string;
+  projectTitle?: string;
+  projectType?: string;
+  projectStatus?: string;
 }
 
 // 프로젝트 타입

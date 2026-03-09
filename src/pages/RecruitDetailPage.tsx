@@ -24,6 +24,17 @@ const RecruitDetailPage: React.FC = () => {
     const [hasApplied, setHasApplied] = useState(false);
     const [myApplicationId, setMyApplicationId] = useState<number | null>(null);
 
+    // 지원자 메모 (모집 공고 작성자용)
+    const [memos, setMemos] = useState<Record<number, string>>({});
+
+    // 공고 수정
+    const [isEditing, setIsEditing] = useState(false);
+    const [editTitle, setEditTitle] = useState('');
+    const [editDescription, setEditDescription] = useState('');
+    const [editProjectType, setEditProjectType] = useState('');
+    const [editTechInput, setEditTechInput] = useState('');
+    const [editRecruitNumber, setEditRecruitNumber] = useState(1);
+
     // 댓글
     const [comments, setComments] = useState<CommentResponse[]>([]);
     const [commentText, setCommentText] = useState('');
@@ -32,13 +43,21 @@ const RecruitDetailPage: React.FC = () => {
     const [replyText, setReplyText] = useState('');
     const [isSecretReply, setIsSecretReply] = useState(false);
 
+    // 댓글 작성자 프로필 모달
+    const [commentProfile, setCommentProfile] = useState<{ id: number; name: string; department: string } | null>(null);
+
     const loadRecruitData = useCallback(async (recruitId: number) => {
         try {
             const data = await recruitService.getRecruitPost(recruitId);
             setRecruit(data);
             if (user && data.authorId === user.id) {
-                const apps = await recruitService.getApplications(recruitId);
-                setApplications(apps);
+                try {
+                    const apps = await recruitService.getApplications(recruitId);
+                    setApplications(apps);
+                    setMemos(apps.reduce((acc, a) => ({ ...acc, [a.id]: a.memo || '' }), {}));
+                } catch (appsError) {
+                    console.error('지원자 목록 불러오기 실패', appsError);
+                }
             }
         } catch (error) {
             console.error('공고 불러오기 실패', error);
@@ -86,15 +105,16 @@ const RecruitDetailPage: React.FC = () => {
         }
     };
 
-    // 지원자 수락
-    const handleAcceptApplicant = async (appId: number) => {
+    // 지원자 메모 저장
+    const handleSaveMemo = async (appId: number) => {
         if (!id) return;
+        const memoText = memos[appId] ?? '';
         try {
-            await recruitService.updateApplicationStatus(parseInt(id), appId, 'accepted');
-            const apps = await recruitService.getApplications(parseInt(id));
-            setApplications(apps);
+            await recruitService.saveMemo(parseInt(id), appId, memoText);
+            setApplications(prev => prev.map(a => a.id === appId ? { ...a, memo: memoText } : a));
         } catch (e) {
-            alert('처리 실패');
+            console.error('메모 저장 실패 (로컬 적용)', e);
+            setApplications(prev => prev.map(a => a.id === appId ? { ...a, memo: memoText } : a));
         }
     };
 
@@ -178,6 +198,36 @@ const RecruitDetailPage: React.FC = () => {
         });
     };
 
+    // 공고 수정 시작
+    const handleStartEdit = () => {
+        if (!recruit) return;
+        setEditTitle(recruit.title);
+        setEditDescription(recruit.description);
+        setEditProjectType(recruit.projectType);
+        setEditTechInput(recruit.requiredTechStacks.join(', '));
+        setEditRecruitNumber(recruit.recruitNumber);
+        setIsEditing(true);
+    };
+
+    // 공고 수정 저장
+    const handleSaveEdit = async () => {
+        if (!recruit || !id) return;
+        const techStacks = editTechInput.split(',').map(t => t.trim()).filter(Boolean);
+        try {
+            const updated = await recruitService.updateRecruitPost(parseInt(id), {
+                title: editTitle,
+                description: editDescription,
+                projectType: editProjectType,
+                requiredTechStacks: techStacks,
+                recruitNumber: editRecruitNumber,
+            });
+            setRecruit(updated);
+            setIsEditing(false);
+        } catch (e) {
+            alert('수정에 실패했습니다. 다시 시도해주세요.');
+        }
+    };
+
     if (recruitError) return (
         <div className="recruits-page">
             <div className="recruits-container">
@@ -220,14 +270,24 @@ const RecruitDetailPage: React.FC = () => {
                         <span className={`status-badge ${isRecruiting ? 'recruiting' : 'closed'}`}>
                             {isRecruiting ? '🟢 모집중' : '🔴 마감'}
                         </span>
-                        {/* 작성자 전용: 모집 상태 토글 */}
+                        {/* 작성자 전용: 모집 상태 토글 + 수정 */}
                         {isAuthor && (
-                            <button
-                                onClick={handleToggleStatus}
-                                className={`toggle-status-btn ${isRecruiting ? 'close' : 'open'}`}
-                            >
-                                {isRecruiting ? '모집 마감하기' : '모집 재개하기'}
-                            </button>
+                            <>
+                                <button
+                                    onClick={handleToggleStatus}
+                                    className={`toggle-status-btn ${isRecruiting ? 'close' : 'open'}`}
+                                >
+                                    {isRecruiting ? '모집 마감하기' : '모집 재개하기'}
+                                </button>
+                                {!isEditing && (
+                                    <button
+                                        onClick={handleStartEdit}
+                                        className="toggle-status-btn open"
+                                    >
+                                        수정하기
+                                    </button>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>
@@ -260,11 +320,88 @@ const RecruitDetailPage: React.FC = () => {
                     {/* ── 상세 정보 탭 ── */}
                     {activeTab === 'info' && (
                         <div className="recruit-detail-card">
-                            <div className="detail-section">
+                            {/* 수정 폼 */}
+                            {isEditing && (
+                                <div className="detail-section">
+                                    <h3>공고 수정</h3>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        <div>
+                                            <label style={{ fontSize: '13px', fontWeight: 600, color: '#555', display: 'block', marginBottom: '4px' }}>제목</label>
+                                            <input
+                                                type="text"
+                                                value={editTitle}
+                                                onChange={e => setEditTitle(e.target.value)}
+                                                style={{ width: '100%', padding: '8px 12px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{ fontSize: '13px', fontWeight: 600, color: '#555', display: 'block', marginBottom: '4px' }}>프로젝트 소개</label>
+                                            <textarea
+                                                className="comment-textarea"
+                                                value={editDescription}
+                                                onChange={e => setEditDescription(e.target.value)}
+                                                rows={5}
+                                                style={{ marginTop: 0 }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{ fontSize: '13px', fontWeight: 600, color: '#555', display: 'block', marginBottom: '4px' }}>유형</label>
+                                            <select
+                                                value={editProjectType}
+                                                onChange={e => setEditProjectType(e.target.value)}
+                                                style={{ padding: '8px 12px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '14px' }}
+                                            >
+                                                <option value="hackathon">해커톤</option>
+                                                <option value="capstone">캡스톤</option>
+                                                <option value="creative">창의학기제</option>
+                                                <option value="other">기타</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label style={{ fontSize: '13px', fontWeight: 600, color: '#555', display: 'block', marginBottom: '4px' }}>모집 인원</label>
+                                            <input
+                                                type="number"
+                                                min={1}
+                                                value={editRecruitNumber}
+                                                onChange={e => setEditRecruitNumber(parseInt(e.target.value) || 1)}
+                                                style={{ width: '80px', padding: '8px 12px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '14px' }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{ fontSize: '13px', fontWeight: 600, color: '#555', display: 'block', marginBottom: '4px' }}>기술 스택 (쉼표로 구분)</label>
+                                            <input
+                                                type="text"
+                                                value={editTechInput}
+                                                onChange={e => setEditTechInput(e.target.value)}
+                                                placeholder="예: React, TypeScript, Java"
+                                                style={{ width: '100%', padding: '8px 12px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }}
+                                            />
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                            <button
+                                                onClick={() => setIsEditing(false)}
+                                                style={{ padding: '8px 16px', border: '1px solid #ddd', borderRadius: '8px', background: '#fff', cursor: 'pointer', fontSize: '14px' }}
+                                            >
+                                                취소
+                                            </button>
+                                            <button
+                                                className="comment-submit-btn"
+                                                onClick={handleSaveEdit}
+                                                disabled={!editTitle.trim()}
+                                            >
+                                                저장
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {!isEditing && <div className="detail-section">
                                 <h3>프로젝트 소개</h3>
                                 <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.8' }}>{recruit.description}</p>
-                            </div>
+                            </div>}
 
+                            {!isEditing && (
                             <div className="detail-section">
                                 <h3>모집 정보</h3>
                                 <div className="info-grid">
@@ -290,7 +427,9 @@ const RecruitDetailPage: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
+                            )}
 
+                            {!isEditing && (
                             <div className="detail-section">
                                 <h3>필요 기술 스택</h3>
                                 <div className="tech-stacks">
@@ -299,6 +438,7 @@ const RecruitDetailPage: React.FC = () => {
                                     ))}
                                 </div>
                             </div>
+                            )}
 
                             {/* 작성자가 아닐 때: 지원하기 + 쪽지 보내기 */}
                             {!isAuthor && (
@@ -431,14 +571,14 @@ const RecruitDetailPage: React.FC = () => {
                                                     <div className="comment-author">
                                                         <div
                                                             className="comment-avatar clickable"
-                                                            onClick={() => navigate(`/profile/${comment.authorId}`)}
+                                                            onClick={() => setCommentProfile({ id: comment.authorId, name: comment.authorName, department: comment.authorDepartment })}
                                                             title={`${comment.authorName} 프로필 보기`}
                                                         >
-                                                            {comment.authorName[0]}
+                                                            {(comment.authorName || '?')[0]}
                                                         </div>
                                                         <div style={{ flex: 1 }}>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                                                                <span className="comment-author-name clickable" onClick={() => navigate(`/profile/${comment.authorId}`)}>
+                                                                <span className="comment-author-name clickable" onClick={() => setCommentProfile({ id: comment.authorId, name: comment.authorName, department: comment.authorDepartment })}>
                                                                     {displayName}
                                                                 </span>
                                                                 <span style={{ fontSize: '12px', color: '#aaa' }}>{comment.authorDepartment}</span>
@@ -494,12 +634,12 @@ const RecruitDetailPage: React.FC = () => {
                                                                 <div key={reply.id} className={`reply-item comment-item ${reply.isSecret ? 'secret-visible' : ''} ${replyIsMine ? 'my-comment' : ''}`}>
                                                                     <div className="comment-author">
                                                                         <div className="reply-arrow">↩</div>
-                                                                        <div className="comment-avatar clickable" onClick={() => navigate(`/profile/${reply.authorId}`)}>
-                                                                            {reply.authorName[0]}
+                                                                        <div className="comment-avatar clickable" onClick={() => setCommentProfile({ id: reply.authorId, name: reply.authorName, department: reply.authorDepartment })}>
+                                                                            {(reply.authorName || '?')[0]}
                                                                         </div>
                                                                         <div style={{ flex: 1 }}>
                                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                                                                                <span className="comment-author-name clickable" onClick={() => navigate(`/profile/${reply.authorId}`)}>
+                                                                                <span className="comment-author-name clickable" onClick={() => setCommentProfile({ id: reply.authorId, name: reply.authorName, department: reply.authorDepartment })}>
                                                                                     {replyDisplayName}
                                                                                 </span>
                                                                                 <span style={{ fontSize: '12px', color: '#aaa' }}>{reply.authorDepartment}</span>
@@ -641,17 +781,34 @@ const RecruitDetailPage: React.FC = () => {
                                             </span>
                                         </div>
                                         <p><strong>지원 동기:</strong> {app.motivation}</p>
-                                        <div className="tech-stacks" style={{ margin: '8px 0' }}>
+                                                        <div className="tech-stacks" style={{ margin: '8px 0' }}>
                                             {app.applicant.techStacks.map((t, i) => (
                                                 <span key={i} className="tech-badge">{t}</span>
                                             ))}
                                         </div>
-                                        <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                                            {app.status === 'pending' && (
-                                                <button className="btn-create" onClick={() => handleAcceptApplicant(app.id)}>
-                                                    수락
+                                        <div style={{ marginTop: '12px' }}>
+                                            <label style={{ fontSize: '13px', fontWeight: '600', color: '#555', display: 'block', marginBottom: '4px' }}>
+                                                📝 메모 <span style={{ fontSize: '12px', color: '#aaa', fontWeight: 'normal' }}>(본인만 볼 수 있습니다)</span>
+                                            </label>
+                                            <textarea
+                                                className="comment-textarea"
+                                                placeholder="이 지원자에 대한 메모를 남겨보세요. (장단점, 인상, 연락 여부 등)"
+                                                value={memos[app.id] ?? ''}
+                                                onChange={e => setMemos(prev => ({ ...prev, [app.id]: e.target.value }))}
+                                                rows={2}
+                                                style={{ marginTop: '0' }}
+                                            />
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                                                <button
+                                                    className="comment-submit-btn"
+                                                    onClick={() => handleSaveMemo(app.id)}
+                                                    disabled={(memos[app.id] ?? '') === (app.memo || '')}
+                                                >
+                                                    메모 저장
                                                 </button>
-                                            )}
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
                                             <button
                                                 className="btn-message"
                                                 onClick={() => handleSendMessage(
@@ -713,6 +870,30 @@ const RecruitDetailPage: React.FC = () => {
                     )}
                 </div>
             </div>
+
+            {/* 댓글 작성자 프로필 모달 */}
+            {commentProfile && (
+                <div className="dm-modal-overlay" onClick={() => setCommentProfile(null)}>
+                    <div className="dm-mini-profile" onClick={e => e.stopPropagation()}>
+                        <button className="dm-modal-close" style={{ position: 'absolute', top: 12, right: 12 }} onClick={() => setCommentProfile(null)}>✕</button>
+                        <div className="dm-avatar large" style={{ margin: '0 auto 12px' }}>
+                            {commentProfile.name[0]}
+                        </div>
+                        <p className="dm-mini-name">{commentProfile.name}</p>
+                        {commentProfile.department && (
+                            <p className="dm-mini-dept">{commentProfile.department}</p>
+                        )}
+                        <div className="dm-mini-actions">
+                            <button className="dm-mini-btn profile" onClick={() => { navigate(`/profile/${commentProfile.id}`); setCommentProfile(null); }}>
+                                프로필 보기
+                            </button>
+                            <button className="dm-mini-btn message" onClick={() => { handleSendMessage(commentProfile.id, commentProfile.name, commentProfile.department); setCommentProfile(null); }}>
+                                쪽지 보내기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

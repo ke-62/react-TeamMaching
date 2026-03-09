@@ -7,7 +7,6 @@ interface CreateRecruitPostRequest {
   projectType: string;
   requiredTechStacks: string[];
   recruitNumber: number;
-  deadline: string;
 }
 
 export const recruitService = {
@@ -84,6 +83,17 @@ export const recruitService = {
   // AI 추천 팀원 조회
   getRecommendedMembers: async (recruitId: number): Promise<RecommendationResult[]> => {
     const response = await apiClient.get(`/v1/projects/${recruitId}/recommendations`);
+    return response.data;
+  },
+
+  // 지원자 메모 저장 (모집 공고 작성자용)
+  saveMemo: async (recruitId: number, applicationId: number, memo: string): Promise<void> => {
+    await apiClient.patch(`/v1/projects/${recruitId}/applications/${applicationId}/memo`, { memo });
+  },
+
+  // 내가 지원한 프로젝트 목록
+  getMyApplications: async (): Promise<Application[]> => {
+    const response = await apiClient.get('/users/me/applications');
     return response.data;
   },
 };

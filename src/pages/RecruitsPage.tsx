@@ -6,6 +6,14 @@ import './RecruitsPage.css';
 
 type TabType = 'hackathon' | 'capstone' | 'creative' | 'other' | '';
 
+const TAB_LABELS: Record<string, string> = {
+  hackathon: '해커톤',
+  capstone: '캡스톤',
+  creative: '창의학기제',
+  other: '기타',
+  '': '전체',
+};
+
 const RecruitsPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -106,20 +114,20 @@ const RecruitsPage: React.FC = () => {
             <div className="ai-banner-text">
               <div className="ai-banner-icon">⚡</div>
               <div>
-                <h3>AI 해커톤 맞춤 추천</h3>
+                <h3>AI {TAB_LABELS[activeTab]} 맞춤 추천</h3>
                 <p>내 프로필 정보를 바탕으로 적합한 프로젝트를 선별합니다.</p>
               </div>
             </div>
             <button className="ai-banner-button">
               <span>🔍</span>
-              해커톤 추천 받기
+              {TAB_LABELS[activeTab]} 추천 받기
             </button>
           </div>
         </div>
 
         {/* 헤더 영역 */}
         <div className="section-header">
-          <h2>해커톤 모집 공고 <span className="count">({displayedRecruits.length})</span></h2>
+          <h2>{TAB_LABELS[activeTab]} 모집 공고 <span className="count">({displayedRecruits.length})</span></h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <label className="recruiting-filter-toggle">
               <input
